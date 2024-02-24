@@ -53,7 +53,7 @@ async def get_score_info(message: Message, state: FSMContext):
         result = s.strip("{}")
         result = result.replace(",", "")
         await message.answer(result)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.start, F.text == "Выбрать факультет")
@@ -68,7 +68,7 @@ async def menu_chosen(message: Message, state: FSMContext):
 @router.message(Form.choosing_facultet, F.text == "Гриффиндор")
 async def facultet_chosen(message: Message, state: FSMContext):
     await message.answer(
-        text=f"Вы выбрали {message.text.lower()}.\n"
+        text=f"Вы выбрали факультет {message.text.lower()}.\n"
              f"Теперь выберите действие:",
         reply_markup=kb.make_row_keyboard(available_actions))
     await state.set_state(Form.choosing_action_gryf)
@@ -77,7 +77,7 @@ async def facultet_chosen(message: Message, state: FSMContext):
 @router.message(Form.choosing_facultet, F.text == "Слизерин")
 async def facultet_chosen(message: Message, state: FSMContext):
     await message.answer(
-        text=f"Вы выбрали {message.text.lower()}.\n"
+        text=f"Вы выбрали факультет {message.text.lower()}.\n"
              f"Теперь выберите действие:",
         reply_markup=kb.make_row_keyboard(available_actions))
     await state.set_state(Form.choosing_action_slys)
@@ -86,7 +86,7 @@ async def facultet_chosen(message: Message, state: FSMContext):
 @router.message(Form.choosing_facultet, F.text == "Хаффлпафф")
 async def facultet_chosen(message: Message, state: FSMContext):
     await message.answer(
-        text=f"Вы выбрали {message.text.lower()}.\n"
+        text=f"Вы выбрали факультет {message.text.lower()}.\n"
              f"Теперь выберите действие:",
         reply_markup=kb.make_row_keyboard(available_actions))
     await state.set_state(Form.choosing_action_huff)
@@ -95,7 +95,7 @@ async def facultet_chosen(message: Message, state: FSMContext):
 @router.message(Form.choosing_facultet, F.text == "Рейвенкло")
 async def facultet_chosen(message: Message, state: FSMContext):
     await message.answer(
-        text=f"Вы выбрали {message.text.lower()}.\n"
+        text=f"Вы выбрали факультет {message.text.lower()}.\n"
              f"Теперь выберите действие:",
         reply_markup=kb.make_row_keyboard(available_actions))
     await state.set_state(Form.choosing_action_rave)
@@ -181,7 +181,7 @@ async def adding_score_gryf(message: Message, state: FSMContext):
     change_score["Гриффиндор"] += int(message.text)
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.adding_score_slys)
@@ -192,7 +192,7 @@ async def adding_score_slys(message: Message, state: FSMContext):
     change_score["Слизерин"] += int(message.text)
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.adding_score_huff)
@@ -203,7 +203,7 @@ async def adding_score_slys(message: Message, state: FSMContext):
     change_score["Хаффлпафф"] += int(message.text)
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.adding_score_rave)
@@ -214,7 +214,7 @@ async def adding_score_slys(message: Message, state: FSMContext):
     change_score["Рейвенкло"] += int(message.text)
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.removing_score_gryf)
@@ -222,10 +222,14 @@ async def adding_score_gryf(message: Message, state: FSMContext):
     await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
     with open('score.json', 'r', encoding='utf-8') as json_file:
         change_score = json.load(json_file)
-    change_score["Гриффиндор"] -= int(message.text)
+        change_score["Гриффиндор"] -= int(message.text)
+    if change_score["Гриффиндор"] <= 0:
+        change_score["Гриффиндор"] = 0
+        await message.answer(text="Количество баллов не может быть меньше нуля.")
+        await message.answer(text="Теперь у Грифффиндора 0 баллов.")
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.removing_score_slys)
@@ -233,10 +237,14 @@ async def adding_score_gryf(message: Message, state: FSMContext):
     await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
     with open('score.json', 'r', encoding='utf-8') as json_file:
         change_score = json.load(json_file)
-    change_score["Слизерин"] -= int(message.text)
+        change_score["Слизерин"] -= int(message.text)
+    if change_score["Слизерин"] <= 0:
+        change_score["Слизерин"] = 0
+        await message.answer(text="Количество баллов не может быть меньше нуля.")
+        await message.answer(text="У Слизерина 0 баллов.")
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.removing_score_huff)
@@ -244,10 +252,14 @@ async def adding_score_gryf(message: Message, state: FSMContext):
     await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
     with open('score.json', 'r', encoding='utf-8') as json_file:
         change_score = json.load(json_file)
-    change_score["Хаффлпафф"] -= int(message.text)
+        change_score["Хаффлпафф"] -= int(message.text)
+    if change_score["Хаффлпафф"] <= 0:
+        change_score["Хаффлпафф"] = 0
+        await message.answer(text="Количество баллов не может быть меньше нуля.")
+        await message.answer(text="У Хаффлпаффа 0 баллов.")
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.removing_score_rave)
@@ -255,10 +267,14 @@ async def adding_score_gryf(message: Message, state: FSMContext):
     await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
     with open('score.json', 'r', encoding='utf-8') as json_file:
         change_score = json.load(json_file)
-    change_score["Рейвенкло"] -= int(message.text)
+        change_score["Рейвенкло"] -= int(message.text)
+    if change_score["Рейвенкло"] <= 0:
+        change_score["Рейвенкло"] = 0
+        await message.answer(text="Количество баллов не может быть меньше нуля.")
+        await message.answer(text="У Рейвенкло 0 баллов.")
     with open('score.json', 'w', encoding='utf-8') as json_file:
         json.dump(change_score, json_file, ensure_ascii=False, indent=4)
-    await state.clear()
+    await state.set_state(Form.start)
 
 
 @router.message(Form.choosing_facultet)
