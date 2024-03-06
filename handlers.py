@@ -3,10 +3,12 @@ from aiogram.types import Message
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
+from aiogram.fsm.storage.memory import MemoryStorage
 from settings import settings
 import keyboards as kb
 import json
 
+storage = MemoryStorage()
 router = Router()
 router.message.filter(F.chat.type == "private")
 bot = Bot(token=settings.bots.bot_token, parse_mode='HTML')
@@ -35,11 +37,29 @@ class Form(StatesGroup):
     score_info = State()
 
 
-@router.message(Command("start", "menu"))
-async def cmd_menu(message: Message, state: FSMContext):
-    await message.answer(
-        text=f'Приветствую,{message.from_user.first_name}. Выберите пункт меню',
-        reply_markup=kb.make_row_keyboard(available_menus))
+class AwaitMessages(StatesGroup):
+    fio_add = State()
+
+
+@router.message(Command("start"))
+async def start(message: Message, state: FSMContext):
+    await message.answer(text="Добро пожаловать, введите должность и ФИО")
+    await state.set_state(AwaitMessages.fio_add)
+
+
+@router.message(AwaitMessages.fio_add)
+async def process_fio_add(message: Message, state: FSMContext):
+    with open('FIO.json', 'r', encoding='utf-8') as json_file:
+        data = json.load(json_file)
+        while True:
+            key = message.from_user.first_name
+            value = message.text
+            data[key] = value
+            break
+    with open('FIO.json', 'w', encoding='utf-8') as json_file:
+        json.dump(data, json_file, ensure_ascii=False, indent=4)
+    await message.answer(text=f'Приветствую, {message.text}. Выберите пункт меню',
+                         reply_markup=kb.make_row_keyboard(available_menus))
     await state.set_state(Form.start)
 
 
@@ -183,9 +203,25 @@ async def adding_score_gryf(message: Message, state: FSMContext):
         change_score["Гриффиндор"] += int(a)
         with open('score.json', 'w', encoding='utf-8') as json_file:
             json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+        with open('FIO.json', 'r', encoding='utf-8') as json_file:
+            data = json.load(json_file)
+            key = message.from_user.first_name
+        x = ({data[key]}, "добавил", int(a), "баллов Гриффиндору")
+        print(x)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
+
+        ''''
+        with open('log.json', 'r', encoding='utf-8') as json_file:
+            log = json.load(json_file)
+        while True:
+            key = ''
+            log[key] = x
+            break
+        with open('log.json', 'w', encoding='utf-8') as json_file:
+            json.dump(log, json_file, ensure_ascii=False, indent=4)
+        '''
 
 
 @router.message(Form.adding_score_slys)
@@ -216,6 +252,7 @@ async def adding_score_slys(message: Message, state: FSMContext):
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
+
 
 @router.message(Form.adding_score_rave)
 async def adding_score_slys(message: Message, state: FSMContext):
