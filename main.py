@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from aiogram import Bot, Dispatcher
 from settings import settings
 import asyncio
