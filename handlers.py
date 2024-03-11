@@ -1,5 +1,5 @@
 from aiogram import Router, Bot, F
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
@@ -60,6 +60,7 @@ async def process_fio_add(message: Message, state: FSMContext):
         json.dump(data, json_file, ensure_ascii=False, indent=4)
     await message.answer(text=f'Приветствую, {message.text}. Выберите пункт меню',
                          reply_markup=kb.make_row_keyboard(available_menus))
+    await message.answer(text=f'Либо введите команду /log для просмотра истории')
     await state.set_state(Form.start)
 
 
@@ -71,7 +72,7 @@ async def get_score_info(message: Message, state: FSMContext):
         score_dict = json.load(json_file)
         s = json.dumps(score_dict, skipkeys=False, ensure_ascii=False, indent=0, sort_keys=False)
         result = s.strip("{}")
-        result = result.replace(",", "")
+        result = result.replace(",", "").replace('"', '')
         await message.answer(result)
     await state.set_state(Form.start)
 
@@ -206,22 +207,12 @@ async def adding_score_gryf(message: Message, state: FSMContext):
         with open('FIO.json', 'r', encoding='utf-8') as json_file:
             data = json.load(json_file)
             key = message.from_user.first_name
-        x = ({data[key]}, "добавил", int(a), "баллов Гриффиндору")
-        print(x)
+        x = (data[key], "добавил(а)", int(a), "баллов Гриффиндору")
+        with open('log.txt', 'a') as f:
+            print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
-
-        ''''
-        with open('log.json', 'r', encoding='utf-8') as json_file:
-            log = json.load(json_file)
-        while True:
-            key = ''
-            log[key] = x
-            break
-        with open('log.json', 'w', encoding='utf-8') as json_file:
-            json.dump(log, json_file, ensure_ascii=False, indent=4)
-        '''
 
 
 @router.message(Form.adding_score_slys)
@@ -234,13 +225,19 @@ async def adding_score_slys(message: Message, state: FSMContext):
         change_score["Слизерин"] += int(a)
         with open('score.json', 'w', encoding='utf-8') as json_file:
             json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+        with open('FIO.json', 'r', encoding='utf-8') as json_file:
+            data = json.load(json_file)
+            key = message.from_user.first_name
+        x = (data[key], 'добавил(а)', int(a), 'баллов Слизерину')
+        with open('log.txt', 'a') as f:
+            print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
 
 
 @router.message(Form.adding_score_huff)
-async def adding_score_slys(message: Message, state: FSMContext):
+async def adding_score_huff(message: Message, state: FSMContext):
     a = message.text
     if a.isdigit():
         await message.answer(text=f"Баллы добавлены!", reply_markup=kb.make_row_keyboard(available_menus))
@@ -249,13 +246,19 @@ async def adding_score_slys(message: Message, state: FSMContext):
         change_score["Хаффлпафф"] += int(a)
         with open('score.json', 'w', encoding='utf-8') as json_file:
             json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+        with open('FIO.json', 'r', encoding='utf-8') as json_file:
+            data = json.load(json_file)
+            key = message.from_user.first_name
+        x = (data[key], "добавил(а)", int(a), "баллов Хаффлпаффу")
+        with open('log.txt', 'a') as f:
+            print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
 
 
 @router.message(Form.adding_score_rave)
-async def adding_score_slys(message: Message, state: FSMContext):
+async def adding_score_rave(message: Message, state: FSMContext):
     a = message.text
     if a.isdigit():
         await message.answer(text=f"Баллы добавлены!", reply_markup=kb.make_row_keyboard(available_menus))
@@ -264,82 +267,152 @@ async def adding_score_slys(message: Message, state: FSMContext):
         change_score["Рейвенкло"] += int(a)
         with open('score.json', 'w', encoding='utf-8') as json_file:
             json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+        with open('FIO.json', 'r', encoding='utf-8') as json_file:
+            data = json.load(json_file)
+            key = message.from_user.first_name
+        x = (data[key], "добавил(а)", int(a), "баллов Рейвенкло")
+        with open('log.txt', 'a') as f:
+            print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
 
 
 @router.message(Form.removing_score_gryf)
-async def adding_score_gryf(message: Message, state: FSMContext):
+async def removing_score_gryf(message: Message, state: FSMContext):
     a = message.text
     if a.isdigit():
         await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
         with open('score.json', 'r', encoding='utf-8') as json_file:
             change_score = json.load(json_file)
             change_score["Гриффиндор"] -= int(a)
-        if change_score["Гриффиндор"] <= 0:
+        if int(a) > change_score["Гриффиндор"]:
             change_score["Гриффиндор"] = 0
             await message.answer(text="Количество баллов не может быть меньше нуля.")
-            await message.answer(text="Теперь у Грифффиндора 0 баллов.")
-        with open('score.json', 'w', encoding='utf-8') as json_file:
-            json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            await message.answer(text="Теперь у Гриффиндора 0 баллов.")
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "попробовал(а) вычесть", int(a), "баллов у Гриффиндора и теперь количество баллов = 0")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
+            await state.set_state(Form.start)
+        else:
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "вычел(чла)", int(a), "баллов у Гриффиндора")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
 
 
 @router.message(Form.removing_score_slys)
-async def adding_score_gryf(message: Message, state: FSMContext):
+async def removing_score_slys(message: Message, state: FSMContext):
     a = message.text
     if a.isdigit():
         await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
         with open('score.json', 'r', encoding='utf-8') as json_file:
             change_score = json.load(json_file)
             change_score["Слизерин"] -= int(a)
-        if change_score["Слизерин"] <= 0:
+        if int(a) > change_score["Слизерин"]:
             change_score["Слизерин"] = 0
             await message.answer(text="Количество баллов не может быть меньше нуля.")
-            await message.answer(text="У Слизерина 0 баллов.")
-        with open('score.json', 'w', encoding='utf-8') as json_file:
-            json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            await message.answer(text="Теперь у Слизерина 0 баллов.")
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "попробовал(а) вычесть", int(a), "баллов у Слизерина и теперь количество баллов = 0")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
+            await state.set_state(Form.start)
+        else:
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "вычел(чла)", int(a), "баллов у Слизерина")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
 
 
 @router.message(Form.removing_score_huff)
-async def adding_score_gryf(message: Message, state: FSMContext):
+async def removing_score_huff(message: Message, state: FSMContext):
     a = message.text
     if a.isdigit():
         await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
         with open('score.json', 'r', encoding='utf-8') as json_file:
             change_score = json.load(json_file)
             change_score["Хаффлпафф"] -= int(a)
-        if change_score["Хаффлпафф"] <= 0:
+        if int(a) > change_score["Хаффлпафф"]:
             change_score["Хаффлпафф"] = 0
             await message.answer(text="Количество баллов не может быть меньше нуля.")
-            await message.answer(text="У Хаффлпаффа 0 баллов.")
-        with open('score.json', 'w', encoding='utf-8') as json_file:
-            json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            await message.answer(text="Теперь у Хаффлпаффа 0 баллов.")
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "попробовал(а) вычесть", int(a), "баллов у Хаффлпаффа и теперь количество баллов = 0")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
+            await state.set_state(Form.start)
+        else:
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "вычел(чла)", int(a), "баллов у Хаффлпаффа")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
 
 
 @router.message(Form.removing_score_rave)
-async def adding_score_gryf(message: Message, state: FSMContext):
+async def removing_score_rave(message: Message, state: FSMContext):
     a = message.text
     if a.isdigit():
         await message.answer(text=f"Баллы вычтены!", reply_markup=kb.make_row_keyboard(available_menus))
         with open('score.json', 'r', encoding='utf-8') as json_file:
             change_score = json.load(json_file)
             change_score["Рейвенкло"] -= int(a)
-        if change_score["Рейвенкло"] <= 0:
+        if int(a) > change_score["Рейвенкло"]:
             change_score["Рейвенкло"] = 0
             await message.answer(text="Количество баллов не может быть меньше нуля.")
-            await message.answer(text="У Рейвенкло 0 баллов.")
-        with open('score.json', 'w', encoding='utf-8') as json_file:
-            json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            await message.answer(text="Теперь у Рейвенкло 0 баллов.")
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "попробовал(а) вычесть", int(a), "баллов у Рейвенкло и теперь количество баллов = 0")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
+            await state.set_state(Form.start)
+        else:
+            with open('score.json', 'w', encoding='utf-8') as json_file:
+                json.dump(change_score, json_file, ensure_ascii=False, indent=4)
+            with open('FIO.json', 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                key = message.from_user.first_name
+            x = (data[key], "вычел(чла)", int(a), "баллов у Рейвенкло")
+            with open('log.txt', 'a') as f:
+                print(str(x)[1:-1].replace("'", "").replace(",", ""), file=f)
         await state.set_state(Form.start)
     else:
         await message.answer(text="Это не число, попробуйте ещё раз")
@@ -362,6 +435,13 @@ async def action_chosen_incorrectly(message: Message, state: FSMContext):
         reply_markup=kb.make_row_keyboard(available_actions)
     )
     await state.set_state(Form.choosing_action)
+
+
+@router.message(Command("log"))
+async def log_download(message: Message):
+    doc = FSInputFile('log.txt')
+    usr_id = message.from_user.id
+    await bot.send_document(document=doc, chat_id=usr_id)
 
 
 @router.message()
