@@ -1,0 +1,10 @@
+[Unit]
+Description=Hogwarts Score Bot
+StartLimitInterval=1
+StartLimitBurst=10000
+
+[Service]
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+ExecStart=venv/bin/python ./main.py
